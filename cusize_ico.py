@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # Cusize for an icosahedral grid, see README for more information
 
 
@@ -9,7 +9,6 @@ path = '/home/thirza/Cusize_python/PyRipser/python'
 os.chdir(path)
 #print os.listdir('.')
 from unionfind import UnionFind
-
 
 
 # Load files and variables
@@ -50,7 +49,7 @@ print cloudcover
 ##############################################
 
 # Clustering part
-
+print 'Clustering...'
 
 idx_clouds = np.array(np.where(ql_binary))[0]
 
@@ -61,19 +60,16 @@ test = UnionFind(nr_cloud_cells)
 counter = 0
 
 
-#for j in range(0,nr_cloud_cells):
-for j in range(0,10):
+for j in range(0,nr_cloud_cells):
     cell_1 = idx_clouds[j]
     for i in range(0,3):
-        cell_2 = neighbor_cell_index[i,cell_1]
+        cell_2 = neighbor_cell_index[i,cell_1]-1
         if cell_2 != -1:
             if ql_binary[cell_2]:
-                print cell_2
                 idx_2 = np.where(idx_clouds==cell_2)
                 test.link(j,idx_2)
                 counter += 1
        
-print 'counter:',counter
 
 for j in range(0, nr_cloud_cells):
     test.find(j)
@@ -83,23 +79,42 @@ for j in range(0, nr_cloud_cells):
 ###################################################################
 
 # Labelling, plus calculating size and center
+print 'Labelling...'
 
-cloud_label = 0
-cloud_size_long = np.zeros(ncells)
+def cloudcentre(cloud_cells, clon, clat):
+    max_lon = np.max(clon[cloud_cells])
+    min_lon = np.min(clon[cloud_cells])
+    cloud_lon = (max_lon+min_lon)/2
+    max_lat = np.max(clat[cloud_cells])
+    min_lat = np.min(clat[cloud_cells])
+    cloud_lat = (max_lat+min_lat)/2
+    return cloud_lon, cloud_lat
+
 
 parents = set(test.parent)
+nr_clouds = len(parents)
+
+cloud_label = 0
+cloud_size = np.zeros(nr_clouds)
+cloud_lon = np.zeros(nr_clouds)
+cloud_lat = np.zeros(nr_clouds)
+
 for p in parents:
     #print '%d --- %s' % (p, np.where(test.parent == p))
     idx_parent = np.where(test.parent == p)
-    #print idx_parent
     cloud_cells = idx_clouds[idx_parent]
-    #print cloud_cells
-    cloud_size_long[cloud_label] = len(idx_parent[0])
+    nr_cloud_cells = len(idx_parent[0])
+    cloud_size[cloud_label] = nr_cloud_cells * darea
+    centre = cloudcentre(cloud_cells, clon, clat)
+    cloud_lon[cloud_label] = centre[0]
+    cloud_lat[cloud_label] = centre[1]
     cloud_label += 1
     
-    
-cloud_size = np.trim_zeros(cloud_size_long)
 
-print cloud_size
-nr_clouds = len(cloud_size)
-print nr_clouds 
+##############################################################
+
+# Building the cloud size distribution
+
+
+
+    
