@@ -3,12 +3,14 @@
 
 
 import numpy as np
+import math
 from netCDF4 import Dataset
 import os
 path = '/home/thirza/Cusize_python/PyRipser/python'
 os.chdir(path)
 #print os.listdir('.')
 from unionfind import UnionFind
+import matplotlib.pyplot as plt
 
 
 # Load files and variables
@@ -81,14 +83,16 @@ for j in range(0, nr_cloud_cells):
 # Labelling, plus calculating size and center
 print 'Labelling...'
 
-def cloudcentre(cloud_cells, clon, clat):
+def cloudattributes(cloud_cells, clon, clat, darea):
     max_lon = np.max(clon[cloud_cells])
     min_lon = np.min(clon[cloud_cells])
     cloud_lon = (max_lon+min_lon)/2
     max_lat = np.max(clat[cloud_cells])
     min_lat = np.min(clat[cloud_cells])
     cloud_lat = (max_lat+min_lat)/2
-    return cloud_lon, cloud_lat
+    cloud_area = len(cloud_cells) * darea
+    cloud_size = (cloud_area/math.pi)**0.5
+    return cloud_lon, cloud_lat, cloud_size
 
 
 parents = set(test.parent)
@@ -104,17 +108,36 @@ for p in parents:
     idx_parent = np.where(test.parent == p)
     cloud_cells = idx_clouds[idx_parent]
     nr_cloud_cells = len(idx_parent[0])
-    cloud_size[cloud_label] = nr_cloud_cells * darea
-    centre = cloudcentre(cloud_cells, clon, clat)
-    cloud_lon[cloud_label] = centre[0]
-    cloud_lat[cloud_label] = centre[1]
+    attributes = cloudattributes(cloud_cells, clon, clat, darea)
+    cloud_lon[cloud_label] = attributes[0]
+    cloud_lat[cloud_label] = attributes[1]
+    cloud_size[cloud_label] = attributes[2]
     cloud_label += 1
     
+
 
 ##############################################################
 
 # Building the cloud size distribution
 
+step = (darea/math.pi)**0.5
+sizemin = (darea/math.pi)**0.5
+sizemax = ((ncells*darea)/math.pi)**0.5
+bin_edges = np.arange(sizemin, sizemax, step) # sizemin or 0?
+
+freq, edges = np.histogram(cloud_size, bins=bin_edges, density=True)
 
 
-    
+plt.figure()
+axes = plt.gca()
+axes.set_xlim([0,2000])
+axes.set_ylim([0,0.003])
+plt.scatter(edges[:-1], freq)
+plt.show()
+
+
+
+
+
+
+   
